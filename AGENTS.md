@@ -4,11 +4,12 @@
 
 skilliosis is a public, one-way mirror of the author's favorite daily-use
 [OMP (Oh My Pi)](https://github.com/can1350/oh-my-pi) agent skills, kept in
-`~/.omp` on the author's machine. This repo contains no authored code beyond `README.md` and this file. The
-mirror toolchain - `sync` (Python) + `skills.toml` (what gets published) - is
-**local-only**: deliberately not tracked and gitignored, because it encodes
-the author's `~/.omp` layout. It exists only in the author's working copy of
-this repo; a fresh clone cannot run `./sync`.
+`~/.omp` on the author's machine. This repo contains no authored code beyond `README.md`, the public
+installers (`install.sh`, `install.ps1`) and this file. The mirror toolchain
+- `sync` (Python) + `skills.toml` (what gets published) - is **local-only**:
+deliberately not tracked and gitignored, because it encodes the author's
+`~/.omp` layout. It exists only in the author's working copy of this repo; a
+fresh clone cannot run `./sync`.
 The two mirrored skills encode the author's machine (paths, versions) by
 design.
 
@@ -45,7 +46,8 @@ publishing a new skill, add its hand-written README section yourself.
 - `skills/<name>/SKILL.md` - a skill's entry point (loaded by OMP by name).
 - `skills/<name>/scripts/` - runnable helpers and self-tests (bash/python).
 - `skills/<name>/reference/` - load-by-pointer docs (commands, recipes).
-- Repo root - authored files: `README.md`, `AGENTS.md`, `.gitignore`. The
+- Repo root - authored files: `README.md`, `AGENTS.md`, `.gitignore`,
+  `install.sh`, `install.ps1`. The
   toolchain files `sync` and `skills.toml` also live here on the author's
   machine but untracked (see Project Overview); never stage them.
 
@@ -82,6 +84,12 @@ build, install, or CI step.
   inside SKILL.md bodies - mirrored copies keep those absolute paths as-is.
 - All artifacts are English; shebangs `#!/usr/bin/env bash` / `python3`;
   scripts are executable (copy2 preserves modes).
+- Installers (`install.sh`, `install.ps1`) are the public install surface:
+  dependency-free (curl + tar / PowerShell built-ins), work from any folder,
+  detect harnesses by config dirs or CLI commands, and support
+  `SKILLIOSIS_TAR_URL` to override the tarball for mirrors and tests. After
+  any change, re-run the full branch matrix (interactive, `--dest`, `--skill`,
+  `-y`, `--list`, no-harness) before committing.
 - `skills/architect-partner/.gitignore` travels with the skill and is inert
   here (its private targets are never copied in the first place).
 
