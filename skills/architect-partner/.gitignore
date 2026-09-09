@@ -1,0 +1,10 @@
+# Private protocol books and runtime files - never publish
+QUOTES.md
+REF.md
+.arch-guard/
+.quotes.lock
+.quotes.*
+
+# Python runtime
+__pycache__/
+*.pyc

@@ -1,0 +1,4 @@
+# Local-only maintainer toolchain. These files encode the author's ~/.omp
+# layout and must never be committed to this public mirror.
+sync
+skills.toml
