@@ -54,12 +54,21 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/vesch
 & "$env:TEMP\skilliosis-install.ps1"
 ```
 
-| You want to... | Linux, macOS | Windows (PowerShell) |
-| --- | --- | --- |
-| Install without prompts | `install.sh --dest ~/.claude/skills` | `install.ps1 -Dest "$env:USERPROFILE\.claude\skills"` |
-| Install one skill | `install.sh --dest DIR --skill write-a-skill` | `install.ps1 -Dest DIR -Skill write-a-skill` |
-| Install into every detected harness | `install.sh -y` | `install.ps1 -Yes` |
-| Just list detected harnesses | `install.sh --list` | `install.ps1 -List` |
+No questions? Pick the destination folder yourself:
+
+```sh
+bash /tmp/skilliosis-install.sh --dest ~/.claude/skills
+```
+
+```powershell
+& "$env:TEMP\skilliosis-install.ps1" -Dest "$env:USERPROFILE\.claude\skills"
+```
+
+The other flags (PowerShell spellings in parentheses):
+
+- `--skill NAME` (`-Skill NAME`) - install a single skill, e.g. `--skill write-a-skill`
+- `-y` (`-Yes`) - install into every detected harness, no picker
+- `--list` (`-List`) - show what was detected, install nothing
 
 > [!TIP]
 > One folder can feed several tools: `.claude/skills` serves Claude Code and
