@@ -1,131 +1,117 @@
 ---
 name: architect-calculator
-description: "Use when creating or updating the architectural data calculator workbook (xlsx) of an architect-partner project - record sizing through kafka / file storage / clickhouse with compression chains, codec bonus and hardware blocks - or when advising how to compute the project's metrics, sizings and process volumes, and how to verify that every number is correct. Locks the variable list and the desired final cells BEFORE any workbook; prototypes all math as a throwaway python script in /tmp first; owns the exact formatting palette, cell typology, units convention, and the create/verify scripts."
+description: "Use when an architect-partner project needs sizing or metrics math: understanding the system being sized, locking the mandatory inputs, creating or updating the input constants file, researching unknown constants, writing the human-readable justification, or rendering the final xlsx calculator. Pipeline: understand system -> lock mandatory inputs -> constants file -> research -> constants recursion -> justification -> xlsx render; the workbook is only drawn when every variable is known - math is never invented there."
 ---
 
-# Architectural calculator - creation and verification rules
+# Architectural calculator - constants-first sizing pipeline
 
 The calculator is the most responsible artifact of the project: its numbers drive hardware and
-cost decisions. This sub-skill advises how to compute the project's metrics, sizings and
-process volumes, and how to verify that everything is computed correctly.
+cost decisions. The math is NEVER invented in the workbook. It is built bottom-up through five
+stages; each stage gates the next.
 
-## Precondition (hard, user order 2026-08-21)
+## Pipeline (user orders 2026-08-25: mini-ERIR sizing session; understand-then-lock first)
 
-The workbook is NOT started until the user has given BOTH lists: the variables and the desired
-final cells. Without both there is nothing to build against - asking for them is the correct
-next step; building anything is not.
+0. SYSTEM UNDERSTANDING - first understand the system the calculator is made for. The agent
+   states its model of the dataflow and layers (who writes what, in what order) and the user
+   corrects it. A wrong mental model invalidates every downstream number - the user's
+   correction here is the most valuable input of the whole pipeline. No artifacts.
+1. MANDATORY INPUTS LOCK - strictly fix the data without which nothing can be computed: the
+   base inputs every number traces to (inflow per period, volumes per store, retention,
+   ratios). Locked with the user; a missing mandatory input blocks all calculation - it is a
+   question, never a filled-in guess.
+2. CONSTANTS FILE - the single source of truth. A python file holding constants only:
+   - ONLY constants. No explanatory comments, no essay text, no argumentation - only group
+     header comments (`# TIME`, `# PRODUCTION DATA`, `# RATIOS`). Argumentation lives in
+     chat and in the justification stage.
+   - No magic numbers: every literal is a named constant (`0.60` -> `S3_FILE_SHARE_OF_INCOME`,
+     `6` -> `S3_WINDOW_MONTHS`). A number appears only as the value of a named constant.
+   - Measured per-entity data goes in dicts (hashmaps); totals and ratios are COMPUTED from
+     them, never re-typed.
+   - User's exact variable names are honored. Python forbids identifiers starting with a
+     digit (`12MONTH` -> `MONTH12`) - state that to the user, do not silently rename.
+   - Derived constants reference their sources and are defined after their dependencies.
+   - Dead constants (unreferenced, superseded, `None` placeholders) are removed.
+3. RESEARCH - fill UNKNOWN constants. Sources: measurements from prod (SQL over partitions,
+   MinIO listing, counters), official vendor docs for ratio norms. Every constant gets a
+   status argued in chat: measured / user-given / derived / assumption.
+4. CONSTANTS RECURSION - research results update the constants file; new gaps surface; loop
+   until every constant that matters has a value. Two or three passes is the normal state,
+   not a failure. This is where the pipeline spends most of its time.
+5. JUSTIFICATION - human-readable text (Telegram message, doc) drawn FROM the constants:
+   every number in the text traces to a named constant. The user owns the wording; the agent
+   proposes phrasing, the user edits the file. The agent NEVER full-rewrites a user-edited
+   file - targeted edits only, re-read first.
+6. XLSX RENDER - only when every variable is known and the math is locked (stage 5 done).
+   The workbook RENDERS the locked computation; it adds no math of its own.
 
-## Pipeline (user order 2026-08-21)
+## HARD GATE - the workbook
 
-1. LOCK - variables + desired finals, quote-anchored per the parent-skill THE RULE.
-2. PROTOTYPE - write ALL computations as a throwaway python script under /tmp and run it;
-   cross-check the key totals a second, independent way and iterate until everything
-   converges. The xlsx is never the place where the math is invented.
-3. BUILD - only a converged prototype is transcribed into the workbook (create.py skeleton
-   for new books; never re-run create.py on an existing book).
-4. GATE - check.py AND check_usage.py AND unwind.py all pass before delivery. Automation must
-   catch ~99% of problems: unused variables, wrong formulas, broken references, scale errors.
+- Not started until stage 4 is done and the user has named the desired final cells.
+- ALL math is prototyped as a throwaway python script in /tmp and cross-checked by a second,
+  independent computation before any xlsx exists.
+- xlsx formulas carry the locked constants' values; no magic numbers in formulas.
+- Delivery gate: `check.py` AND `check_usage.py` AND `unwind.py` all pass, and the
+  justification text's numbers match the constants (extract-and-compare).
+- Nothing beyond the user's named blocks: no helper cells, no decorative text, no own
+  constants block inside the workbook.
 
-One sheet. Sections in fixed order (model as locked with the user, 2026-08-20):
+## HARD rules (from the mini-ERIR session)
 
-1. глобальные переменные - parquet compression levels table (reference for level choice),
-   message layout-compression percent (SINGLE compression value, never a chained product),
-   kafka compression percent, db base compression percent, replication multipliers per system
-   (db, kafka, file store).
-2. переменные под источник - name, records per day, growth percent (source-owned and passive
-   by design: the OWNER raises records per day by it; formulas never reference it), record
-   weight, share of the fh record needed by the db, business redundancy multiplier.
-3. формульные веса - fh record weight = raw x (1 - layout compression), single compression;
-   db raw weight; db base-compressed weight; db weight with redundancy.
-4. итоговые сводные ячейки - columns час/сутки/месяц/год (24/30/365 embedded); records row
-   in millions; system rows (kafka, fh, clickhouse) in TB; volumes INCLUDE replication.
-5. итоговые сводные ячейки железа - rows per system (kafka, clickhouse, file store); ONE
-   years-multiplier cell applied to every row; SSD = year-TB x years multiplier (the stored
-   data itself - NO disk norm); CPU = SSD x cpu-cores-per-TB norm; RAM = SSD x ram-GB-per-TB
-   norm / 1000; norms are sourced variables; growth NEVER enters hardware formulas.
-6. бонус - codec table (name + compression percent), codec rows and saved-TB rows in TB.
-   Pipeline: raw share keeps base compression + codec share compressed by the codec; savings
-   = share x (codec - base). The x1000 kb-to-bytes factor MUST be present in every
-   weight-to-TB formula. Cross-check: codec row + savings row = base db volume row.
-
-## HARD rules
-
-Cell typology (the user's systematization; colors are theme-based, EXACT):
-
-| Cell type | Fill | Font |
-|---|---|---|
-| Section headers | theme 1, tint 0.35 | theme 0 (white) |
-| Summary / table headers | theme 6, tint 0.8 | theme 1 |
-| Variable labels | theme 3, tint 0.8 | theme 1 |
-| Values | none | plain |
-| Literals (text-valued cells) | none | italic |
-
-- No borders; Calibri 11; theme+tint colors, never raw RGB.
-- Units: every dimensioned label carries its unit after a comma
-  ("записей в сутки, миллионы", "вес записи в кафке, кб").
-- кб = 1000 bytes; ТБ = 10^12 bytes; records counted in millions.
-- Every summary cell: ROUNDUP(x, 2). Month = 30 days, year = 365 days, hour = day/24 -
-  embedded in formulas, never visible variables.
-- Formulas reference cells; user-entered values are never duplicated inside formulas.
-- NEVER change column widths the user has touched. On creation, widths come from the longest
-  content; on updates widths are not touched at all.
-- A number in a variable cell is either measured, sourced, or explicitly marked as a
-  placeholder pending research - invented "realistic" values are forbidden.
-- DELIVERY GATE: check.py AND check_usage.py AND unwind.py all pass. check_usage: every
-  numeric cell must be referenced by some formula (text literals exempt; passive-by-design
-  numerics pass via --allow and are named in the delivery note).
-- Never rewrite a formula range with one uniform template: per-column factors (the RAM /1000)
-  die silently. After any batch rewrite, diff every column and unwind the finals.
-- Every new section ships with an arithmetic cross-check against an existing row
-  (codec + savings = base volume).
-- The workbook ships only after check.py passes (no #N/A, no #ERR, no dangling references).
-- Nothing beyond the user's named variables and blocks: an element without a spec quote is
-  removed or asked about. Everything in the workbook carries meaning: no extra words, no
-  extra cells - no helper cells, no decorative text, no own constants block.
+- Units: binary (TiB = 2^40) and decimal (TB = 10^12) are different scales - name the scale
+  in the variable name or state it. A TiB/TB mix is a ~10% error that survives every check
+  because it is consistent.
+- Replication and erasure coding are explicit named multipliers, applied per system
+  according to its architecture:
+  - Kafka: replication factor multiplies disk (each segment stored N times).
+  - MinIO: erasure coding multiplies physical disk; the ratio is measured from the prod
+    topology and does NOT transfer to a different topology.
+  - ClickHouse replicas SERVE queries: disk, RAM and CPU all multiply by replica count.
+  - Greenplum mirrors do NOT serve queries: disk multiplies, CPU and RAM do not.
+- A number in a variable cell is measured, user-given, or derived from those - never an
+  invented "realistic" value. An assumption enters only with the user's ok and is flagged in
+  the justification text.
+- The user edits artifacts themselves; agent edits are targeted (`edit`), never a full-file
+  rewrite of a file the user touched.
+- Vocabulary is locked by the user's accepted terms; introducing a synonym (e.g. "зеркала"
+  instead of the user's "репликация") is a defect.
 
 ## Scripts
 
-Script paths are relative to this sub-skill's directory (`calculator/`).
+Absolute paths (all relative to this sub-skill's directory `calculator/`):
 
 | Script | Purpose |
 |---|---|
-| `scripts/create.py` | Build the skeleton workbook from the canonical spec with the palette (new books only). |
-| `scripts/check.py` | Evaluate every formula, fail on any error value; optional width freeze comparison. |
-| `scripts/check_usage.py` | Fail on any numeric variable cell referenced by no formula (literals exempt; --allow for passive-by-design). |
-| `scripts/unwind.py` | Print the full computation tree (label, formula, value) of final cells; no args = all true finals. |
+| `~/.omp/agent/managed-skills/architect-partner/calculator/scripts/create.py` | Build the skeleton workbook from the locked spec with the palette (new books only; never re-run on an existing book). |
+| `~/.omp/agent/managed-skills/architect-partner/calculator/scripts/check.py` | Evaluate every formula, fail on any error value (#N/A, #ERR, dangling references). |
+| `~/.omp/agent/managed-skills/architect-partner/calculator/scripts/check_usage.py` | Fail on any numeric variable cell referenced by no formula (literals exempt; passive-by-design pass via --allow and are named in the delivery note). |
+| `~/.omp/agent/managed-skills/architect-partner/calculator/scripts/unwind.py` | Print the full computation tree (label, formula, value) of final cells; no args = all true finals. |
 
 ## Failure modes
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Workbook shows #N/A / #ERR | Shipped without evaluation | check.py before every delivery |
-| User's widths overwritten | Creation logic run on an existing book | create.py only for new books |
-| Dead numeric variables after model changes | Nothing re-checks usage | check_usage.py in the delivery gate |
-| Section plausible but 1000x off (kb vs bytes) | Scale never cross-checked | unwind.py + arithmetic cross-check rule |
-| Workbook started with no variable/final lists from the user | Precondition skipped | Ask for both lists; build nothing until they are quoted |
-| Math invented inside the xlsx | Prototype stage skipped | /tmp python prototype converges first |
+| User's cleanup clobbered | Full-file rewrite over a user-edited file | Targeted edits only; re-read before every edit |
+| Calculator built for the wrong system | Agent's mental model of the dataflow never checked | Stage 0: state the model, let the user correct it before any math |
+| Numbers computed with a mandatory input missing | Calculation started before the input lock | Stage 1: lock base inputs first; a missing input is a question |
+| Constants file carries essays | Argumentation written into the file | Only group headers; argumentation to chat |
+| Magic numbers in formulas | No naming discipline | Every literal a named constant |
+| Workbook math differs from constants | Math invented in the xlsx | Render only; prototype and cross-check in /tmp first |
+| Everything ~10% off | TiB and TB mixed consistently | Name the scale; keep one everywhere |
+| CPU/RAM doubled wrongly | Replication semantics not thought through | Per system: who serves queries (CH replicas yes, GP mirrors no) |
+| Dead numeric variables after model change | Nothing re-checks usage | check_usage.py in the delivery gate |
+| Constant used before defined | Import-order error | Define dependencies first; verify in a fresh python process |
 
 ## Current state
 
 | Date | Note |
 |---|---|
-| 2026-08-19 | Extracted from a real project calculator.xlsx reworked by the author; theme palette read from that file; hardware block per its example. |
-| 2026-08-20 | Model relocked per user: hardware = data x replication x years (SSD IS the data; no disk norms), CPU/RAM from SSD via per-TB norms, growth is a passive source variable, single fh compression, redundancy calibrated from the project's own prod-table audit measurement. check_usage.py + unwind.py added after the session post-mortem. |
-| 2026-08-21 | Open-source pass: script paths made relative to the sub-skill directory, project identifiers and private numbers removed. |
-| 2026-08-21 | Precondition + pipeline added per user order: no workbook before the user gives the variables and the desired final cells; all math prototyped as a throwaway python script in /tmp and cross-checked before any xlsx; advisory role fixed (metrics, sizings, processes, verification). |
+| 2026-08-25 | Rewritten from scratch after the mini-ERIR sizing session. The old project-specific workbook spec (parquet/codec/compression chains, fixed sheet order) is removed; the skill now encodes the constants-first pipeline (0-5) and the constants-file discipline. Scripts and the delivery gate are kept. |
 
 ## Session mistakes
 
-- 2026-08-20: built hardware norms with inverted semantics (capacity-per-resource instead of
-  resource-per-TB; divided instead of multiplying) - implausible totals. Fix: norms are
-  resource per 1 TB, totals multiply. Prevention: state each norm's semantics against its
-  label before writing formulas.
-- 2026-08-20: batch-rewrote formulas column-uniformly and silently dropped the RAM /1000
-  (GB->TB). Fix: per-column diff after every rewrite. Prevention: never one template for a
-  formula range with per-column factors; unwind the finals after.
-- 2026-08-20: bonus section shipped 1000x under (kb-to-bytes x1000 missing) from day one;
-  checks caught references, not scale. Fix: x1000 + cross-check (codec + savings = base).
-  Prevention: delivery gate now includes unwind.py.
-- 2026-08-20: accepted an unsourced user variable without checking the project's own audit
-  measurements. Fix: calibrated it from the audit. Prevention: an unsourced user variable is
-  a question; check project measurements first.
+- 2026-08-25: presented a dataflow with wrong layer shares (treated ФХ as the source of everything, ignored the highload -> Kafka -> ФХ -> ETL -> ODS Cloudberry -> DS -> CH chain); the user corrected it ("ты не понимаешь архитектуру"). Prevention: stage 0 - state the dataflow model first and get the user's correction before any percentage.
+- 2026-08-25: full-file rewrite of message.txt clobbered the user's cleanup (Kafka/MinIO lines); he had to re-fix. Prevention: targeted edits only on user-edited files.
+- 2026-08-25: formal-language pass changed word order and register beyond the asked orthography ("Пускай"->"Пусть", "прод"->"продакшена", "софт"->"ПО"); user reverted. Prevention: fix exactly what was asked, list the rest as options.
+- 2026-08-25: introduced "зеркала" where the user's term is "репликация". Prevention: lock vocabulary from the user's accepted terms.
+- 2026-08-25: constants referenced before definition; an eval kernel cached a stale module. Prevention: define dependencies first; verify with a fresh python process.
+- 2026-08-25: Cloudberry segments initially computed from the mirrored disk, doubling CPU/RAM wrongly; mirrors do not serve queries. Prevention: replication semantics per system before writing formulas.

@@ -30,12 +30,14 @@ Strictly one-way pipeline: `~/.omp` -> `./sync` -> this repo.
      (fnmatch on any path part; global defaults `.git`, `__pycache__`,
      `*.pyc`, `.DS_Store` + per-skill `exclude`).
 4. `skills/<name>/` is replaced wholesale (rmtree + fresh copy - copy2 keeps
-   modes), dirs not in the config are pruned, and the README skill list is
-   regenerated between `<!-- skills:start -->` / `<!-- skills:end -->`
-   (descriptions from SKILL.md frontmatter, unescaped, truncated ~240 chars).
+   modes), dirs not in the config are pruned. The README has **no generated
+   skill list since 2026-09**: per-skill sections are hand-written, and
+   `sync` skips README regeneration (with a warning) when the
+   `<!-- skills:start -->` / `<!-- skills:end -->` markers are absent.
 
 Consequence: **never edit anything under `skills/`** - the next `./sync`
-overwrites it. Edit the skill in `~/.omp`, then sync and commit.
+overwrites it. Edit the skill in `~/.omp`, then sync and commit. When
+publishing a new skill, add its hand-written README section yourself.
 
 ## Key Directories
 
@@ -89,8 +91,7 @@ build, install, or CI step.
   README regeneration). Untracked local file - never stage or commit it.
 - `skills.toml` - publish list + sources + global excludes. Untracked local
   file - never stage or commit it. The only file routinely hand-edited.
-- `README.md` - public doc; the skill list between the markers is generated,
-  everything else is hand-written.
+- `README.md` - public doc, entirely hand-written (no generated skill list).
 - `skills/architect-partner/` - largest skill; git-tracked copy, has
   sub-skills (`calculator/`, `data-architect/`, `reflection/`) and its own
   scripts.

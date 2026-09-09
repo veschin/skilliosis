@@ -13,6 +13,10 @@ No other artifact is allowed. The architect accepts or rejects against the check
 2. FLOW (PRISMA-style counts)
    - Considered: N -> screened out: N (reasons) -> included: M
 3. FINDINGS (numbered; EVERY item cites [ТЗ №] / [Q:id] / [source]; uncertain -> [GAP])
+   - Content rule: facts, numbers, verbatim quotes, URLs, commands ONLY - no evaluative
+     wording; options listed as options, never as verdicts; every claim labeled
+     QUOTE / OBSERVED / MEASURED / DERIVED / NOT FOUND; agent outputs are persisted as
+     files next to the distillate (session URIs are not reproduction).
 4. THREATS TO VALIDITY (where this could be wrong or unrepresentative)
 5. VERDICT: useful | useless - one line why
 6. REPRODUCTION: files read, commands run

@@ -1,96 +1,76 @@
 <p align="center">
-  <img src="images/logo.webp" alt="skilliosis" width="230">
+  <img src="images/logo.webp" alt="skilliosis" width="540">
 </p>
 
-Agent skills for AI coding harnesses that load the open `SKILL.md` format
-(a skill directory with a `SKILL.md` plus supporting scripts): Claude Code,
-OpenAI Codex, DeepSeek Harness, opencode, OMP. Every skill here is mirrored
-from the author's live working setup and is in daily use.
+A colony of agent skills, cultured in the author's daily `~/.omp` and spoken
+in the open `SKILL.md` language. Any harness - Claude Code, Codex, DeepSeek
+Harness, opencode, OMP - can graft them in. Prognosis: benign.
 
-Installing is copying the skill directories into the folder your harness
-scans. One command covers every harness - only the target folder changes.
+## Install
 
-## Install - Linux and macOS
+One command, one target folder: the directory your harness scans for skills.
+Default is `~/.claude/skills` (Claude Code reads it; opencode reads it too).
 
-Default target is `~/.claude/skills` (Claude Code reads it; opencode reads it
-too):
+Linux, macOS:
 
 ```sh
 DEST="${DEST:-$HOME/.claude/skills}"; mkdir -p "$DEST"; curl -fsSL https://github.com/veschin/skilliosis/archive/refs/heads/main.tar.gz | tar -xz --strip-components=2 -C "$DEST" skilliosis-main/skills
 ```
 
-Any other harness: pick its folder from the table below and set `DEST` to it.
-Example for Codex:
-
-```sh
-DEST="$HOME/.codex/skills"; mkdir -p "$DEST"; curl -fsSL https://github.com/veschin/skilliosis/archive/refs/heads/main.tar.gz | tar -xz --strip-components=2 -C "$DEST" skilliosis-main/skills
-```
-
-## Install - Windows (PowerShell)
-
-Default target is `%USERPROFILE%\.claude\skills`:
+Windows (PowerShell; needs `tar.exe`, built in since 10 1803):
 
 ```powershell
 $dest="$env:USERPROFILE/.claude/skills"; New-Item -ItemType Directory -Force -Path $dest | Out-Null; $t="$env:TEMP/skilliosis.tar.gz"; Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/veschin/skilliosis/archive/refs/heads/main.tar.gz" -OutFile $t; tar -xzf $t -C $dest --strip-components=2 skilliosis-main/skills; Remove-Item $t
 ```
 
-Requires `tar.exe`, built into Windows 10 (1803+) and 11. For another harness
-replace the path after `$dest=` with the Windows form of the folder from the
-table below (`~` becomes `%USERPROFILE%`).
+Point `DEST` (Windows: the path after `$dest=`) at your harness's folder;
+`~` becomes `%USERPROFILE%` there:
 
-## Where each harness looks for skills
-
-| Harness | Personal (all projects) | Per project (in a repo) |
+| Harness | Personal | Per project |
 | --- | --- | --- |
 | Claude Code | `~/.claude/skills` | `.claude/skills` |
-| OpenAI Codex | `~/.codex/skills` | not supported - run with `CODEX_HOME` pointed at the project if needed |
-| DeepSeek Harness | `~/.agents/skills` (also `~/.dsh/skills`) | `.agents/skills` (also `.dsh/skills`) |
+| OpenAI Codex | `~/.codex/skills` | no native support - set `CODEX_HOME` per project |
+| DeepSeek Harness | `~/.agents/skills` (or `~/.dsh/skills`) | `.agents/skills` (or `.dsh/skills`) |
 | opencode | `~/.config/opencode/skills` | `.opencode/skills` |
 | OMP | `~/.omp/agent/managed-skills` | `.omp/skills` |
 
-Notes:
+`.claude/skills` feeds Claude Code and opencode; `.agents/skills` feeds
+DeepSeek Harness, opencode and recent Codex builds. One install can feed
+several. Restart Codex afterwards.
 
-- Claude Code and opencode both read `.claude/skills`, and opencode,
-  DeepSeek Harness and recent Codex builds all read `.agents/skills` - one
-  install can cover several harnesses. Prefer `.claude/skills` or
-  `.agents/skills` when you use more than one tool from the same group.
-- Codex picks up new skills after a restart.
-- opencode also loads `.claude/skills` and `.agents/skills` next to
-  `.opencode/skills`, in a project and in your home directory.
-
-## Install one skill
-
-Append the skill name to the archive path in the command.
-
-Linux and macOS (write-a-skill into the default target):
+Install a single skill by appending its name to the archive path:
 
 ```sh
 DEST="${DEST:-$HOME/.claude/skills}"; mkdir -p "$DEST"; curl -fsSL https://github.com/veschin/skilliosis/archive/refs/heads/main.tar.gz | tar -xz --strip-components=2 -C "$DEST" skilliosis-main/skills/write-a-skill
 ```
 
-Windows (PowerShell):
-
-```powershell
-$dest="$env:USERPROFILE\.claude\skills"; New-Item -ItemType Directory -Force -Path $dest | Out-Null; $t="$env:TEMP\skilliosis.tar.gz"; Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/veschin/skilliosis/archive/refs/heads/main.tar.gz" -OutFile $t; tar -xzf $t -C $dest --strip-components=2 skilliosis-main/skills/write-a-skill; Remove-Item $t
-```
-
-## Update
-
-Re-run the install command - files are overwritten in place. Ask your
-assistant to use a skill by name; it reads the `SKILL.md` from the installed
-directory.
+Re-run the command to update, then name the skill to your assistant - it
+reads `SKILL.md` from the installed folder.
 
 ## Skills
 
+### architect-partner
+
 <p align="center">
-  <a href="skills/architect-partner/"><img src="images/architect.webp" alt="architect-partner" width="400"></a>
-  <a href="skills/write-a-skill/"><img src="images/writeaskill.webp" alt="write-a-skill" width="400"></a>
+  <img src="images/architect.webp" alt="architect-partner" width="500">
 </p>
 
-<!-- skills:start -->
-- [architect-partner](skills/architect-partner/) - Use when the user wants to design or research a subsystem, storage, or data flow inside an existing system ("спроектируй хранение", "design the storage", "сделай исследование", "run a research") and demands no-fabrication discipline....
-- [write-a-skill](skills/write-a-skill/) - Use when asked to create, improve, or audit an OMP skill - managed/global or local/project. Picks the right install location so a project skill never lands in the global root.
-<!-- skills:end -->
+A design partner for architecture work: subsystems, storage, data flow.
+One contract at a time - a spec file agreed with you first. Every decision
+is locked with you before any action; every claim is anchored to a verbatim
+quote. No quote, no statement.
 
-The skills encode their author's machine (paths, versions, local quirks).
-Expect to adjust those to your own setup.
+Grows three sub-skills: calculator (sizing workbooks), data-architect
+(data-systems mentoring), reflection (post-mortems and the quote book).
+
+### write-a-skill
+
+<p align="center">
+  <img src="images/writeaskill.webp" alt="write-a-skill" width="500">
+</p>
+
+The methodology this colony is grown with: what makes a skill deterministic,
+where to plant it - global or per project - and how to audit it afterwards.
+
+Every skill carries its host's quirks (paths, versions, local workflows).
+Expect to adapt those to your setup.
