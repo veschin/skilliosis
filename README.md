@@ -1,4 +1,6 @@
-# skilliosis
+<p align="center">
+  <img src="images/logo.webp" alt="skilliosis" width="230">
+</p>
 
 Agent skills for AI coding harnesses that load the open `SKILL.md` format
 (a skill directory with a `SKILL.md` plus supporting scripts): Claude Code,
@@ -79,6 +81,11 @@ assistant to use a skill by name; it reads the `SKILL.md` from the installed
 directory.
 
 ## Skills
+
+<p align="center">
+  <a href="skills/architect-partner/"><img src="images/architect.webp" alt="architect-partner" width="400"></a>
+  <a href="skills/write-a-skill/"><img src="images/writeaskill.webp" alt="write-a-skill" width="400"></a>
+</p>
 
 <!-- skills:start -->
 - [architect-partner](skills/architect-partner/) - Use when the user wants to design or research a subsystem, storage, or data flow inside an existing system ("спроектируй хранение", "design the storage", "сделай исследование", "run a research") and demands no-fabrication discipline....
